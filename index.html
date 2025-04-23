@@ -34,23 +34,35 @@
             border-bottom: 2px solid var(--highlight);
         }
 
-        .slider-container {
+        .tabs {
             display: flex;
-            transition: transform 0.3s ease-in-out;
-            width: 100%;
+            justify-content: center;
+            background: var(--container-bg);
+            padding: 10px;
+            border-bottom: 2px solid var(--highlight);
         }
 
-        .viewport {
-            overflow: hidden;
-            width: 100vw;
-            height: calc(100vh - 60px);
+        .tab {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .tab.active {
+            background: var(--highlight);
         }
 
         .day {
-            flex: 1;
-            width: 100%;
+            display: none;
             padding: 20px;
             box-sizing: border-box;
+        }
+
+        .day.active {
+            display: block;
         }
 
         .card {
@@ -129,17 +141,14 @@
 
 <body>
     <header id="dateHeader">Date</header>
-    <div class="viewport">
-        <div class="slider-container" id="content"></div>
-    </div>
+    <div class="tabs" id="tabs"></div>
+    <div id="content"></div>
 
     <script>
+        const tabs = document.getElementById('tabs');
         const content = document.getElementById('content');
         const header = document.getElementById('dateHeader');
-
         let currentIndex = 0;
-        let startX = 0;
-        let isDragging = false;
 
         function formatDate(date) {
             return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -153,8 +162,15 @@
             const formatted = formatDate(date);
             const key = getStorageKey(date);
 
+            const tabButton = document.createElement('div');
+            tabButton.className = 'tab';
+            tabButton.innerText = formatted;
+            tabButton.onclick = () => showDayTab(date);
+            tabs.appendChild(tabButton);
+
             const dayDiv = document.createElement('div');
             dayDiv.className = 'day';
+            dayDiv.id = 'day_' + key;
             dayDiv.dataset.date = date;
 
             dayDiv.innerHTML = `
@@ -289,11 +305,20 @@
             loadTasks();
         }
 
-        function updateView(index) {
-            content.style.transform = `translateX(-${index * 100}vw)`;
-            const day = new Date();
-            day.setDate(day.getDate() + index);
-            header.innerText = formatDate(day);
+        function showDayTab(date) {
+            const dayKey = getStorageKey(date);
+            document.querySelectorAll('.day').forEach(day => {
+                day.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.getElementById('day_' + dayKey).classList.add('active');
+            const tab = Array.from(tabs.children).find(tab => tab.innerText === formatDate(date));
+            if (tab) tab.classList.add('active');
+
+            header.innerText = formatDate(date);
         }
 
         window.onload = () => {
@@ -303,29 +328,9 @@
                 day.setDate(today.getDate() + i);
                 createDayTab(day);
             }
-            updateView(0);
+            showDayTab(today);
             loadTasks();
         };
-
-        document.querySelector('.viewport').addEventListener('touchstart', (e) => {
-            isDragging = true;
-            startX = e.touches[0].clientX;
-        });
-
-        document.querySelector('.viewport').addEventListener('touchend', (e) => {
-            isDragging = false;
-        });
-
-        document.querySelector('.viewport').addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            const diff = startX - e.touches[0].clientX;
-            if (Math.abs(diff) > 50) {
-                if (diff > 0 && currentIndex < 4) currentIndex++;
-                if (diff < 0 && currentIndex > 0) currentIndex--;
-                updateView(currentIndex);
-                isDragging = false;
-            }
-        });
     </script>
 </body>
 
