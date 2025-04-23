@@ -4,328 +4,490 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Glissant</title>
+    <title>Liste de Courses</title>
     <style>
-        :root {
-            --main-bg: #121212;
-            --container-bg: #1e1e1e;
-            --text-color: white;
-            --highlight: #00ff00;
-            --shadow-color: rgba(0, 255, 0, 0.5);
-        }
-
         body {
-            margin: 0;
             font-family: Arial, sans-serif;
-            background-color: var(--main-bg);
-            color: var(--text-color);
-            overflow: hidden;
-        }
-
-        header {
-            position: sticky;
-            top: 0;
-            background-color: var(--main-bg);
-            z-index: 1000;
-            padding: 10px;
+            background-color: #121212;
+            color: white;
             text-align: center;
-            font-size: 20px;
-            font-weight: bold;
-            border-bottom: 2px solid var(--highlight);
-        }
-
-        .slider-container {
-            display: flex;
-            transition: transform 0.3s ease-in-out;
-            width: 100%;
-        }
-
-        .viewport {
-            overflow: hidden;
-            width: 100vw;
-            height: calc(100vh - 60px);
-        }
-
-        .day {
-            flex: 1;
-            width: 100%;
+            margin: 0;
             padding: 20px;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: auto;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(0, 0, 255, 0.5);
+            position: relative;
+        }
+
+        input,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 5px;
             box-sizing: border-box;
         }
 
-        .card {
-            background: var(--container-bg);
-            box-shadow: 0 0 10px var(--shadow-color);
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 10px;
-        }
-
-        .card input[type="text"],
-        .card input[type="time"],
-        .card select {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
+        input {
             background: #333;
             color: white;
-            border: none;
-            border-radius: 3px;
         }
 
-        .card button {
-            background: var(--highlight);
-            color: black;
-            padding: 8px;
-            width: 100%;
-            border: none;
-            border-radius: 3px;
+        .add-button {
+            background: rgb(9, 0, 128);
+            color: white;
             cursor: pointer;
             font-weight: bold;
+        }
+
+        .not-found-button {
+            background: darkorange;
+            z-index: 10000;
+            color: white;
+            cursor: pointer;
+            border-radius: 10%;
+            width: 30px;
+            height: 30px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            right: 10px;
+            top: 50%;
+            margin-right: 5px;
+            position: relative;
         }
 
         ul {
-            list-style: none;
             padding: 0;
+            margin: 0;
+            list-style: none;
         }
 
-        li {
-            background: #333;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
+        .item {
             display: flex;
+            user-select: none;
             align-items: center;
             justify-content: space-between;
-            cursor: grab;
+            background: #333;
+            padding: 3px;
+            margin-top: 3px;
+            border-radius: 5px;
+            position: relative;
+            transition: transform 0.2s ease-in-out;
+            z-index: 0;
         }
 
-        li.done {
+        .item:active {
+            cursor: grabbing;
+        }
+
+        .dragging {
+            transform: scale(1.05);
+        }
+
+
+
+        .bought {
             text-decoration: line-through;
-            color: gray;
+            color: grey;
         }
 
-        li.low { border-left: 5px solid green; }
-        li.medium { border-left: 5px solid orange; }
-        li.high { border-left: 5px solid red; }
+        .not-found {
+            background: darkred;
+            color: white;
+        }
 
-        .actions {
+        .small-checkbox {
+            width: 25px;
+            height: 25px;
+            margin-right: 10px;
+            z-index: 10000;
+            position: relative;
+        }
+
+        .item-content {
+            flex: 1;
             display: flex;
-            gap: 5px;
+            justify-content: center;
             align-items: center;
         }
 
-        .actions button {
-            background: transparent;
-            color: red;
-            border: 1px solid red;
+        .delete-all {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            padding: 10px;
+            background: red;
+            color: white;
+            border: none;
             border-radius: 5px;
-            padding: 2px 6px;
             cursor: pointer;
-            font-weight: bold;
+        }
+
+        .action-buttons button {
+            background: rgb(9, 0, 128);
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            margin: 5px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .title-container {
+            position: relative;
+        }
+
+        .title-container h2 {
+            display: inline-block;
+            margin: 0;
+            padding-left: 35px;
+        }
+
+        .options-button {
+            z-index: 555555;
+            background: #0e11c5;
+            color: white;
+            font-size: 14px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .options-button:active {
+            background: rgb(68, 134, 255);
+        }
+
+        .options-button:hover {
+            background: #00007f;
+        }
+
+        .options-menu {
+            display: none;
+            z-index: 55555;
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            background-color: #1e1e1e;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 255, 0.5);
+        }
+
+        .delete-item {
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 10%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            top: 5%;
+            right: 10px;
+            display: flex;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            position: relative;
         }
     </style>
 </head>
 
 <body>
-    <header id="dateHeader">Date</header>
-    <div class="viewport">
-        <div class="slider-container" id="content"></div>
+    <button class="options-button" onclick="toggleOptionsMenu()">⚙️</button>
+
+    <div class="container">
+        <div class="title-container">
+            <h2>Liste de Courses</h2>
+        </div>
+        <input type="text" id="item" placeholder="Nom de l'article">
+        <input type="text" id="note" placeholder="Remarque (optionnel)">
+        <button class="add-button" onclick="addItem()">Ajouter</button>
+        <ul id="list"></ul>
+
+        <div class="options-menu" id="optionsMenu">
+            <div class="action-buttons">
+                <button onclick="downloadList()">Télécharger en .txt</button>
+                <button onclick="printList()">Imprimer</button>
+                <button onclick="shareList()">Partager</button>
+                <button onclick="clearList()">Supprimer la liste</button>
+                <input type="file" id="fileInput" style="display: none;" onchange="loadFile(event)">
+                <button onclick="document.getElementById('fileInput').click()">Charger un fichier .txt</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        const content = document.getElementById('content');
-        const header = document.getElementById('dateHeader');
+        document.addEventListener("DOMContentLoaded", loadList);
 
-        let currentIndex = 0;
-        let startX = 0;
-        let isDragging = false;
-
-        function formatDate(date) {
-            return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        function toggleOptionsMenu() {
+            const menu = document.getElementById('optionsMenu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
 
-        function getStorageKey(date) {
-            return 'tasks_' + date.toISOString().split('T')[0];
+        function addItem() {
+            let itemName = document.getElementById("item").value;
+            let note = document.getElementById("note").value;
+            if (!itemName) return;
+
+            let listItem = { name: itemName, note: note, bought: false, notFound: false };
+            let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+            items.push(listItem);
+            localStorage.setItem("shoppingList", JSON.stringify(items));
+
+            document.getElementById("item").value = "";
+            document.getElementById("note").value = "";
+            loadList();
         }
 
-        function createDayTab(date) {
-            const formatted = formatDate(date);
-            const key = getStorageKey(date);
+        document.addEventListener("DOMContentLoaded", loadList);
 
-            const dayDiv = document.createElement('div');
-            dayDiv.className = 'day';
-            dayDiv.dataset.date = date;
+        let startY = 0;
+        let currentIndex = -1;
+        let itemsArray = [];
+        let draggedItem = null;
 
-            dayDiv.innerHTML = `
-                <div class="card">
-                    <h3>${formatted}</h3>
-                    <input type="text" placeholder="Tâche" id="task_${key}" oninput="saveTempData('${key}')">
-                    <input type="time" id="time_${key}" onchange="saveTempData('${key}')">
-                    <input type="text" placeholder="Remarque (optionnel)" id="note_${key}" oninput="saveTempData('${key}')">
-                    <select id="prio_${key}" onchange="saveTempData('${key}')">
-                        <option value="low">Faible</option>
-                        <option value="medium">Moyenne</option>
-                        <option value="high">Haute</option>
-                    </select>
-                    <button onclick="addTask('${key}')">Ajouter</button>
-                </div>
-                <ul id="list_${key}" ondragover="event.preventDefault()" ondrop="drop(event, '${key}')"></ul>
-            `;
+        function loadList() {
+            let list = document.getElementById("list");
+            list.innerHTML = "";
+            itemsArray = JSON.parse(localStorage.getItem("shoppingList")) || [];
 
-            content.appendChild(dayDiv);
-            restoreTempData(key);
+            itemsArray.forEach((item, index) => {
+                let li = document.createElement("li");
+                li.className = "item";
+                li.dataset.index = index;
+                li.innerHTML = `<span>${item.name}</span>`;
+
+                if (item.bought) li.classList.add("bought");
+                if (item.notFound) li.classList.add("not-found");
+
+                li.innerHTML = `
+            <input type="checkbox" class="small-checkbox" onclick="toggleBought(${index})" ${item.bought ? "checked" : ""}>
+            <div class="item-content">
+                <span onclick="toggleBought(${index})">${item.name} ${item.note ? " - " + item.note : ""}</span>
+            </div>
+            <button class="not-found-button" onclick="toggleNotFound(${index})">🚫</button>
+            <button class="delete-item" onclick="deleteItem(${index})">❌</button>
+        `;
+                li.addEventListener("touchstart", touchStart, { passive: false });
+                li.addEventListener("touchmove", touchMove, { passive: false });
+                li.addEventListener("touchend", touchEnd);
+
+                list.appendChild(li);
+            });
         }
 
-        function saveTempData(key) {
-            const data = {
-                task: document.getElementById(`task_${key}`).value,
-                time: document.getElementById(`time_${key}`).value,
-                note: document.getElementById(`note_${key}`).value,
-                prio: document.getElementById(`prio_${key}`).value
-            };
-            localStorage.setItem('temp_' + key, JSON.stringify(data));
+        document.addEventListener('touchstart', function (event) {
+            if (event.target.closest('.delete-item') || event.target.closest('.not-found-button') || event.target.closest('.small-checkbox')) {
+                event.stopPropagation();
+            }
+        }, { passive: true });
+
+        target.closest('.delete-item') || target.closest('.not-found-button')
+        function touchStart(event) {
+    const target = event.target;
+
+    if (target.closest('.small-checkbox') || target.closest('.delete-item') || target.closest('.not-found-button')) {
+        return;  
+    }
+
+    event.preventDefault();  
+    draggedItem = event.target.closest(".item");
+    if (!draggedItem) return;
+
+    const rect = draggedItem.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    if (Math.abs(event.touches[0].clientX - centerX) <= 50 && Math.abs(event.touches[0].clientY - centerY) <= 50) {
+        startY = event.touches[0].clientY;
+        currentIndex = Number(draggedItem.dataset.index);
+        draggedItem.classList.add("dragging");
+    }
+}
+
+
+
+
+        function touchMove(event) {
+            event.preventDefault();
+            if (!draggedItem) return;
+
+            let touchY = event.touches[0].clientY;
+            let hoveredItem = document.elementFromPoint(event.touches[0].clientX, touchY);
+            let targetItem = hoveredItem?.closest(".item");
+
+            if (targetItem && targetItem !== draggedItem) {
+                let targetIndex = Number(targetItem.dataset.index);
+
+                if (targetIndex !== currentIndex) {
+                    let movedItem = itemsArray.splice(currentIndex, 1)[0];
+                    itemsArray.splice(targetIndex, 0, movedItem);
+                    currentIndex = targetIndex;
+                    localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
+                    loadList();
+                }
+            }
         }
 
-        function restoreTempData(key) {
-            const data = JSON.parse(localStorage.getItem('temp_' + key));
-            if (!data) return;
-            document.getElementById(`task_${key}`).value = data.task || '';
-            document.getElementById(`time_${key}`).value = data.time || '';
-            document.getElementById(`note_${key}`).value = data.note || '';
-            document.getElementById(`prio_${key}`).value = data.prio || 'low';
+        function touchEnd(event) {
+            if (draggedItem) draggedItem.classList.remove("dragging");
+            draggedItem = null;
+            currentIndex = -1;
         }
 
-        function loadTasks() {
-            document.querySelectorAll('.day').forEach(day => {
-                const date = new Date(day.dataset.date);
-                const key = getStorageKey(date);
-                const listEl = document.getElementById(`list_${key}`);
-                const tasks = JSON.parse(localStorage.getItem(key)) || [];
-                listEl.innerHTML = '';
 
-                tasks.forEach((task, index) => {
-                    const li = document.createElement('li');
-                    li.classList.add(task.priority);
-                    if (task.done) li.classList.add('done');
-                    li.setAttribute('draggable', true);
-                    li.setAttribute('data-index', index);
-                    li.setAttribute('data-key', key);
-                    li.ondragstart = drag;
+        function toggleBought(index) {
+            itemsArray[index].bought = !itemsArray[index].bought;
+            localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
+            loadList();
+        }
 
-                    const timePrefix = task.time ? task.time + ' - ' : '';
-                    li.innerHTML = `
-                        <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleDone('${key}', ${index})">
-                        <span style="flex:1; margin-left: 10px;">${timePrefix}${task.text} ${task.note ? '(' + task.note + ')' : ''}</span>
-                        <div class="actions">
-                            <button onclick="deleteTask('${key}', ${index})">X</button>
-                        </div>
-                    `;
-                    listEl.appendChild(li);
+        function toggleNotFound(index) {
+            itemsArray[index].notFound = !itemsArray[index].notFound;
+            localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
+            loadList();
+        }
+
+        function deleteItem(index) {
+            itemsArray.splice(index, 1);
+            localStorage.setItem("shoppingList", JSON.stringify(itemsArray));
+            loadList();
+        }
+
+        function clearList() {
+            let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+
+            const notFoundItems = items.filter(item => item.notFound);
+
+            if (notFoundItems.length > 0) {
+                let notFoundNames = notFoundItems.map(item => item.name).join(', ');
+                let message = "Les éléments suivants n'ont pas été trouvés : " + notFoundNames;
+
+                let confirmation = confirm(message + "\nVoulez-vous vraiment supprimer tous les autres éléments ?");
+
+                if (confirmation) {
+                    let remainingItems = items.filter(item => item.notFound);
+                    localStorage.setItem("shoppingList", JSON.stringify(remainingItems));
+
+                    loadList();
+                }
+            } else {
+                let confirmation = confirm("Êtes-vous sûr de vouloir supprimer toute la liste ?");
+                if (confirmation) {
+                    localStorage.removeItem("shoppingList");
+                    loadList();
+                }
+            }
+        }
+
+
+        function downloadList() {
+            let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+            let text = items.map(item => `${item.name} ${item.note ? "- " + item.note : ""}`).join("\n");
+            let blob = new Blob([text], { type: 'text/plain' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "shopping-list.txt";
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function printList() {
+            let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+            let printWindow = window.open('', '', 'width=800,height=600');
+
+            printWindow.document.write('<html><head><title>Liste de Courses</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('body { font-family: Arial, sans-serif; font-size: 18px; color: #333; line-height: 1.6; padding: 20px; margin: 0; }');
+            printWindow.document.write('ul { padding-left: 20px; }');
+            printWindow.document.write('li { margin-bottom: 10px; }');
+            printWindow.document.write('h1 { font-size: 24px; text-align: center; margin-bottom: 30px; }');
+            printWindow.document.write('</style>');
+            printWindow.document.write('</head><body>');
+
+            printWindow.document.write('<h1>Liste de Courses</h1>');
+
+            printWindow.document.write('<ul>');
+            items.forEach(item => {
+                printWindow.document.write(`<li><strong>${item.name}</strong> ${item.note ? "- " + item.note : ""}</li>`);
+            });
+            printWindow.document.write('</ul>');
+
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function loadFile(event) {
+            let file = event.target.files[0];
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                let text = e.target.result;
+                let items = text.split('\n').map(line => {
+                    let parts = line.split(' - ');
+                    return { name: parts[0], note: parts[1] || '', bought: false, notFound: false };
                 });
-            });
+
+                let existingItems = JSON.parse(localStorage.getItem("shoppingList")) || [];
+                let updatedItems = [...existingItems, ...items];
+
+                localStorage.setItem("shoppingList", JSON.stringify(updatedItems));
+                loadList();
+            };
+            reader.readAsText(file);
         }
 
-        function drag(event) {
-            event.dataTransfer.setData('text/plain', JSON.stringify({
-                index: event.target.dataset.index,
-                key: event.target.dataset.key
-            }));
-        }
+        function shareList() {
+            let items = JSON.parse(localStorage.getItem("shoppingList")) || [];
+            let text = items.map(item => `${item.name} ${item.note ? "- " + item.note : ""}`).join("\n");
 
-        function drop(event, key) {
-            const data = JSON.parse(event.dataTransfer.getData('text/plain'));
-            if (data.key === key) return;
+            let blob = new Blob([text], { type: 'text/plain' });
+            let url = URL.createObjectURL(blob);
 
-            const sourceTasks = JSON.parse(localStorage.getItem(data.key)) || [];
-            const movedTask = sourceTasks.splice(data.index, 1)[0];
-            localStorage.setItem(data.key, JSON.stringify(sourceTasks));
+            const siteLink = "https://lsd-nsi.github.io/liste_des_courses/";
 
-            const targetTasks = JSON.parse(localStorage.getItem(key)) || [];
-            targetTasks.push(movedTask);
-            localStorage.setItem(key, JSON.stringify(targetTasks));
-
-            loadTasks();
-        }
-
-        function addTask(key) {
-            const taskInput = document.getElementById(`task_${key}`);
-            const timeInput = document.getElementById(`time_${key}`);
-            const noteInput = document.getElementById(`note_${key}`);
-            const prioInput = document.getElementById(`prio_${key}`);
-
-            if (!taskInput.value) return;
-
-            const tasks = JSON.parse(localStorage.getItem(key)) || [];
-            tasks.push({
-                text: taskInput.value,
-                time: timeInput.value,
-                note: noteInput.value,
-                priority: prioInput.value,
-                done: false
-            });
-
-            localStorage.setItem(key, JSON.stringify(tasks));
-            localStorage.removeItem('temp_' + key);
-            loadTasks();
-
-            taskInput.value = '';
-            timeInput.value = '';
-            noteInput.value = '';
-            prioInput.value = 'low';
-        }
-
-        function deleteTask(key, index) {
-            const tasks = JSON.parse(localStorage.getItem(key));
-            tasks.splice(index, 1);
-            localStorage.setItem(key, JSON.stringify(tasks));
-            loadTasks();
-        }
-
-        function toggleDone(key, index) {
-            const tasks = JSON.parse(localStorage.getItem(key));
-            tasks[index].done = !tasks[index].done;
-            localStorage.setItem(key, JSON.stringify(tasks));
-            loadTasks();
-        }
-
-        function updateView(index) {
-            content.style.transform = `translateX(-${index * 100}vw)`;
-            const day = new Date();
-            day.setDate(day.getDate() + index);
-            header.innerText = formatDate(day);
-        }
-
-        window.onload = () => {
-            const today = new Date();
-            for (let i = 0; i < 5; i++) {
-                const day = new Date();
-                day.setDate(today.getDate() + i);
-                createDayTab(day);
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Liste de Courses',
+                    text: `Voici ma liste de courses :\n\n${text}\n\nVous pouvez visiter mon site ici : ${siteLink}`,
+                    files: [
+                        new File([blob], "shopping-list.txt", { type: "text/plain" })
+                    ]
+                }).then(() => {
+                    console.log('Liste partagée avec succès');
+                }).catch((error) => {
+                    console.error('Erreur de partage', error);
+                });
+            } else {
+                alert('Le partage n\'est pas supporté sur ce navigateur.');
             }
-            updateView(0);
-            loadTasks();
-        };
-
-        document.querySelector('.viewport').addEventListener('touchstart', (e) => {
-            isDragging = true;
-            startX = e.touches[0].clientX;
-        });
-
-        document.querySelector('.viewport').addEventListener('touchend', (e) => {
-            isDragging = false;
-        });
-
-        document.querySelector('.viewport').addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            const diff = startX - e.touches[0].clientX;
-            if (Math.abs(diff) > 50) {
-                if (diff > 0 && currentIndex < 4) currentIndex++;
-                if (diff < 0 && currentIndex > 0) currentIndex--;
-                updateView(currentIndex);
-                isDragging = false;
-            }
-        });
+        }
     </script>
 </body>
 
