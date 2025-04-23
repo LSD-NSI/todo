@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Glissant</title>
+    <style>
+        :root {
+            --main-bg: #121212;
+            --container-bg: #1e1e1e;
+            --text-color: white;
+            --highlight: #00ff00;
+            --shadow-color: rgba(0, 255, 0, 0.5);
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: var(--main-bg);
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            background-color: var(--main-bg);
+            z-index: 1000;
+            padding: 10px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            border-bottom: 2px solid var(--highlight);
+        }
+
+        .slider-container {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .day {
+            scroll-snap-align: start;
+            min-width: 100vw;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--container-bg);
+            box-shadow: 0 0 10px var(--shadow-color);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .card input[type="text"],
+        .card input[type="time"],
+        .card select {
+            width: calc(100% - 10px);
+            padding: 8px;
+            margin: 5px 0;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+
+        .card button {
+            background: var(--highlight);
+            color: black;
+            padding: 8px;
+            width: 100%;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: #333;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        li.done {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        li.low {
+            border-left: 5px solid green;
+        }
+
+        li.medium {
+            border-left: 5px solid orange;
+        }
+
+        li.high {
+            border-left: 5px solid red;
+        }
+
+        .actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .actions button {
+            background: transparent;
+            color: red;
+            border: 1px solid red;
+            border-radius: 5px;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <header id="dateHeader">Date</header>
+    <div class="slider-container" id="slider">
+        <!-- Jours seront injectés ici -->
+    </div>
+
+    <script>
+        const slider = document.getElementById('slider');
+        const header = document.getElementById('dateHeader');
+
+        function formatDate(date) {
+            return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        }
+
+        function getStorageKey(date) {
+            return 'tasks_' + date.toISOString().split('T')[0];
+        }
+
+        function createDayTab(date, isToday) {
+            const formatted = formatDate(date);
+            const key = getStorageKey(date);
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'day';
+            dayDiv.dataset.date = date;
+
+            const content = `
+                <div class="card">
+                    <h3>${formatted}</h3>
+                    <input type="text" placeholder="Tâche" id="task_${key}" oninput="saveTempData('${key}')">
+                    <input type="time" id="time_${key}" onchange="saveTempData('${key}')">
+                    <input type="text" placeholder="Remarque (optionnel)" id="note_${key}" oninput="saveTempData('${key}')">
+                    <select id="prio_${key}" onchange="saveTempData('${key}')">
+                        <option value="low">Faible</option>
+                        <option value="medium">Moyenne</option>
+                        <option value="high">Haute</option>
+                    </select>
+                    <button onclick="addTask('${key}')">Ajouter</button>
+                </div>
+                <ul id="list_${key}"></ul>
+            `;
+            dayDiv.innerHTML = content;
+            slider.appendChild(dayDiv);
+
+            restoreTempData(key);
+        }
+
+        function saveTempData(key) {
+            const data = {
+                task: document.getElementById(`task_${key}`).value,
+                time: document.getElementById(`time_${key}`).value,
+                note: document.getElementById(`note_${key}`).value,
+                prio: document.getElementById(`prio_${key}`).value
+            };
+            localStorage.setItem('temp_' + key, JSON.stringify(data));
+        }
+
+        function restoreTempData(key) {
+            const data = JSON.parse(localStorage.getItem('temp_' + key));
+            if (!data) return;
+            document.getElementById(`task_${key}`).value = data.task || '';
+            document.getElementById(`time_${key}`).value = data.time || '';
+            document.getElementById(`note_${key}`).value = data.note || '';
+            document.getElementById(`prio_${key}`).value = data.prio || 'low';
+        }
+
+        function loadTasks() {
+            const days = document.querySelectorAll('.day');
+            days.forEach(day => {
+                const date = new Date(day.dataset.date);
+                const key = getStorageKey(date);
+                const listEl = document.getElementById(`list_${key}`);
+                const tasks = JSON.parse(localStorage.getItem(key)) || [];
+                listEl.innerHTML = '';
+
+                tasks.forEach((task, index) => {
+                    const li = document.createElement('li');
+                    li.classList.add(task.priority);
+                    if (task.done) li.classList.add('done');
+                    const timePrefix = task.time ? task.time + ' - ' : '';
+                    li.innerHTML = `
+                        <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleDone('${key}', ${index})">
+                        <span style="flex:1; margin-left: 10px;">${timePrefix}${task.text} ${task.note ? '(' + task.note + ')' : ''}</span>
+                        <div class="actions">
+                            <button onclick="deleteTask('${key}', ${index})">X</button>
+                        </div>
+                    `;
+                    listEl.appendChild(li);
+                });
+            });
+        }
+
+        function addTask(key) {
+            const taskInput = document.getElementById(`task_${key}`);
+            const timeInput = document.getElementById(`time_${key}`);
+            const noteInput = document.getElementById(`note_${key}`);
+            const prioInput = document.getElementById(`prio_${key}`);
+
+            if (!taskInput.value) return;
+
+            const tasks = JSON.parse(localStorage.getItem(key)) || [];
+            tasks.push({
+                text: taskInput.value,
+                time: timeInput.value,
+                note: noteInput.value,
+                priority: prioInput.value,
+                done: false
+            });
+
+            localStorage.setItem(key, JSON.stringify(tasks));
+            localStorage.removeItem('temp_' + key);
+            loadTasks();
+
+            taskInput.value = '';
+            timeInput.value = '';
+            noteInput.value = '';
+            prioInput.value = 'low';
+        }
+
+        function deleteTask(key, index) {
+            const tasks = JSON.parse(localStorage.getItem(key));
+            tasks.splice(index, 1);
+            localStorage.setItem(key, JSON.stringify(tasks));
+            loadTasks();
+        }
+
+        function toggleDone(key, index) {
+            const tasks = JSON.parse(localStorage.getItem(key));
+            tasks[index].done = !tasks[index].done;
+            localStorage.setItem(key, JSON.stringify(tasks));
+            loadTasks();
+        }
+
+        function migrateUnfinishedTasks() {
+            for (let i = 0; i < 5; i++) {
+                const fromDate = new Date();
+                fromDate.setDate(fromDate.getDate() + i);
+                const toDate = new Date(fromDate);
+                toDate.setDate(fromDate.getDate() + 1);
+                const fromKey = getStorageKey(fromDate);
+                const toKey = getStorageKey(toDate);
+                const tasks = JSON.parse(localStorage.getItem(fromKey)) || [];
+                const remaining = tasks.filter(task => !task.done);
+                if (remaining.length > 0) {
+                    const nextTasks = JSON.parse(localStorage.getItem(toKey)) || [];
+                    localStorage.setItem(toKey, JSON.stringify([...nextTasks, ...remaining]));
+                }
+            }
+        }
+
+        window.onload = () => {
+            migrateUnfinishedTasks();
+
+            const today = new Date();
+            for (let i = 0; i < 6; i++) {
+                const day = new Date();
+                day.setDate(today.getDate() + i);
+                createDayTab(day, i === 0);
+            }
+            header.innerText = formatDate(today);
+            loadTasks();
+        }
+    </script>
+</body>
+
+</html>
