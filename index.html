@@ -39,6 +39,7 @@
             overflow-x: auto;
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
         }
 
         .day {
@@ -94,6 +95,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            cursor: grab;
         }
 
         li.done {
@@ -128,14 +130,27 @@
             cursor: pointer;
             font-weight: bold;
         }
+
+        #scrollTodayBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px;
+            background: var(--highlight);
+            color: black;
+            border: none;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1000;
+        }
     </style>
 </head>
 
 <body>
     <header id="dateHeader">Date</header>
-    <div class="slider-container" id="slider">
-        <!-- Jours seront injectés ici -->
-    </div>
+    <div class="slider-container" id="slider"></div>
+    <button id="scrollTodayBtn">📅</button>
 
     <script>
         const slider = document.getElementById('slider');
@@ -169,11 +184,10 @@
                     </select>
                     <button onclick="addTask('${key}')">Ajouter</button>
                 </div>
-                <ul id="list_${key}"></ul>
+                <ul id="list_${key}" ondragover="event.preventDefault()" ondrop="drop(event, '${key}')"></ul>
             `;
             dayDiv.innerHTML = content;
             slider.appendChild(dayDiv);
-
             restoreTempData(key);
         }
 
@@ -209,6 +223,11 @@
                     const li = document.createElement('li');
                     li.classList.add(task.priority);
                     if (task.done) li.classList.add('done');
+                    li.setAttribute('draggable', true);
+                    li.setAttribute('data-index', index);
+                    li.setAttribute('data-key', key);
+                    li.ondragstart = drag;
+
                     const timePrefix = task.time ? task.time + ' - ' : '';
                     li.innerHTML = `
                         <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleDone('${key}', ${index})">
@@ -220,6 +239,28 @@
                     listEl.appendChild(li);
                 });
             });
+        }
+
+        function drag(event) {
+            event.dataTransfer.setData('text/plain', JSON.stringify({
+                index: event.target.dataset.index,
+                key: event.target.dataset.key
+            }));
+        }
+
+        function drop(event, key) {
+            const data = JSON.parse(event.dataTransfer.getData('text/plain'));
+            if (data.key === key) return;
+
+            const sourceTasks = JSON.parse(localStorage.getItem(data.key)) || [];
+            const movedTask = sourceTasks.splice(data.index, 1)[0];
+            localStorage.setItem(data.key, JSON.stringify(sourceTasks));
+
+            const targetTasks = JSON.parse(localStorage.getItem(key)) || [];
+            targetTasks.push(movedTask);
+            localStorage.setItem(key, JSON.stringify(targetTasks));
+
+            loadTasks();
         }
 
         function addTask(key) {
@@ -280,9 +321,27 @@
             }
         }
 
+        function updateHeaderOnScroll() {
+            const days = document.querySelectorAll('.day');
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const date = new Date(entry.target.dataset.date);
+                        header.innerText = formatDate(date);
+                    }
+                });
+            }, { threshold: 0.6 });
+
+            days.forEach(day => observer.observe(day));
+        }
+
+        document.getElementById('scrollTodayBtn').addEventListener('click', () => {
+            const firstDay = document.querySelector('.day');
+            firstDay.scrollIntoView({ behavior: 'smooth' });
+        });
+
         window.onload = () => {
             migrateUnfinishedTasks();
-
             const today = new Date();
             for (let i = 0; i < 6; i++) {
                 const day = new Date();
@@ -291,6 +350,7 @@
             }
             header.innerText = formatDate(today);
             loadTasks();
+            updateHeaderOnScroll();
         }
     </script>
 </body>
