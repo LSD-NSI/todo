@@ -36,14 +36,11 @@
 
         .slider-container {
             display: flex;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-            scroll-behavior: smooth;
+            transition: transform 0.3s ease-in-out;
+            width: 100%;
         }
 
         .day {
-            scroll-snap-align: start;
             min-width: 100vw;
             box-sizing: border-box;
             padding: 20px;
@@ -155,6 +152,7 @@
     <script>
         const slider = document.getElementById('slider');
         const header = document.getElementById('dateHeader');
+        let currentIndex = 0;
 
         function formatDate(date) {
             return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -190,6 +188,25 @@
             slider.appendChild(dayDiv);
             restoreTempData(key);
         }
+
+        let startX = 0;
+        let isDragging = false;
+
+        slider.addEventListener('mousedown', e => {
+            startX = e.pageX;
+            isDragging = true;
+        });
+
+        slider.addEventListener('mouseup', e => {
+            if (!isDragging) return;
+            const diff = e.pageX - startX;
+            if (diff < -50 && currentIndex < slider.children.length - 1) currentIndex++;
+            else if (diff > 50 && currentIndex > 0) currentIndex--;
+            slider.style.transform = `translateX(-${currentIndex * 100}vw)`;
+            isDragging = false;
+        });
+
+        slider.addEventListener('mouseleave', () => isDragging = false);
 
         function saveTempData(key) {
             const data = {
@@ -321,23 +338,9 @@
             }
         }
 
-        function updateHeaderOnScroll() {
-            const days = document.querySelectorAll('.day');
-            const observer = new IntersectionObserver(entries => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const date = new Date(entry.target.dataset.date);
-                        header.innerText = formatDate(date);
-                    }
-                });
-            }, { threshold: 0.6 });
-
-            days.forEach(day => observer.observe(day));
-        }
-
         document.getElementById('scrollTodayBtn').addEventListener('click', () => {
-            const firstDay = document.querySelector('.day');
-            firstDay.scrollIntoView({ behavior: 'smooth' });
+            currentIndex = 0;
+            slider.style.transform = `translateX(0)`;
         });
 
         window.onload = () => {
@@ -350,7 +353,6 @@
             }
             header.innerText = formatDate(today);
             loadTasks();
-            updateHeaderOnScroll();
         }
     </script>
 </body>
