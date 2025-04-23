@@ -37,7 +37,7 @@
         .slider-container {
             display: flex;
             transition: transform 0.3s ease-in-out;
-            width: 600%;
+            width: 100%;
         }
 
         .viewport {
@@ -47,7 +47,8 @@
         }
 
         .day {
-            flex: 1 0 100%;
+            flex: 1;
+            width: 100%;
             padding: 20px;
             box-sizing: border-box;
         }
@@ -148,7 +149,7 @@
             return 'tasks_' + date.toISOString().split('T')[0];
         }
 
-        function createDayTab(date, index) {
+        function createDayTab(date) {
             const formatted = formatDate(date);
             const key = getStorageKey(date);
 
@@ -288,23 +289,6 @@
             loadTasks();
         }
 
-        function migrateUnfinishedTasks() {
-            for (let i = 0; i < 5; i++) {
-                const fromDate = new Date();
-                fromDate.setDate(fromDate.getDate() + i);
-                const toDate = new Date(fromDate);
-                toDate.setDate(fromDate.getDate() + 1);
-                const fromKey = getStorageKey(fromDate);
-                const toKey = getStorageKey(toDate);
-                const tasks = JSON.parse(localStorage.getItem(fromKey)) || [];
-                const remaining = tasks.filter(task => !task.done);
-                if (remaining.length > 0) {
-                    const nextTasks = JSON.parse(localStorage.getItem(toKey)) || [];
-                    localStorage.setItem(toKey, JSON.stringify([...nextTasks, ...remaining]));
-                }
-            }
-        }
-
         function updateView(index) {
             content.style.transform = `translateX(-${index * 100}vw)`;
             const day = new Date();
@@ -313,12 +297,11 @@
         }
 
         window.onload = () => {
-            migrateUnfinishedTasks();
             const today = new Date();
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 5; i++) {
                 const day = new Date();
                 day.setDate(today.getDate() + i);
-                createDayTab(day, i);
+                createDayTab(day);
             }
             updateView(0);
             loadTasks();
@@ -337,7 +320,7 @@
             if (!isDragging) return;
             const diff = startX - e.touches[0].clientX;
             if (Math.abs(diff) > 50) {
-                if (diff > 0 && currentIndex < 5) currentIndex++;
+                if (diff > 0 && currentIndex < 4) currentIndex++;
                 if (diff < 0 && currentIndex > 0) currentIndex--;
                 updateView(currentIndex);
                 isDragging = false;
