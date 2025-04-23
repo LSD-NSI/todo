@@ -19,7 +19,7 @@
             font-family: Arial, sans-serif;
             background-color: var(--main-bg);
             color: var(--text-color);
-            overflow-x: hidden;
+            overflow: hidden;
         }
 
         header {
@@ -37,13 +37,19 @@
         .slider-container {
             display: flex;
             transition: transform 0.3s ease-in-out;
-            width: 100%;
+            width: 600%;
+        }
+
+        .viewport {
+            overflow: hidden;
+            width: 100vw;
+            height: calc(100vh - 60px);
         }
 
         .day {
-            min-width: 100vw;
-            box-sizing: border-box;
+            flex: 1 0 100%;
             padding: 20px;
+            box-sizing: border-box;
         }
 
         .card {
@@ -52,20 +58,18 @@
             border-radius: 5px;
             padding: 15px;
             margin-bottom: 10px;
-            box-sizing: border-box;
         }
 
         .card input[type="text"],
         .card input[type="time"],
         .card select {
-            width: calc(100% - 10px);
+            width: 100%;
             padding: 8px;
             margin: 5px 0;
             background: #333;
             color: white;
             border: none;
             border-radius: 3px;
-            box-sizing: border-box;
         }
 
         .card button {
@@ -100,17 +104,9 @@
             color: gray;
         }
 
-        li.low {
-            border-left: 5px solid green;
-        }
-
-        li.medium {
-            border-left: 5px solid orange;
-        }
-
-        li.high {
-            border-left: 5px solid red;
-        }
+        li.low { border-left: 5px solid green; }
+        li.medium { border-left: 5px solid orange; }
+        li.high { border-left: 5px solid red; }
 
         .actions {
             display: flex;
@@ -127,32 +123,22 @@
             cursor: pointer;
             font-weight: bold;
         }
-
-        #scrollTodayBtn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px;
-            background: var(--highlight);
-            color: black;
-            border: none;
-            border-radius: 50%;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 1000;
-        }
     </style>
 </head>
 
 <body>
     <header id="dateHeader">Date</header>
-    <div class="slider-container" id="slider"></div>
-    <button id="scrollTodayBtn">📅</button>
+    <div class="viewport">
+        <div class="slider-container" id="content"></div>
+    </div>
 
     <script>
-        const slider = document.getElementById('slider');
+        const content = document.getElementById('content');
         const header = document.getElementById('dateHeader');
+
         let currentIndex = 0;
+        let startX = 0;
+        let isDragging = false;
 
         function formatDate(date) {
             return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -162,14 +148,15 @@
             return 'tasks_' + date.toISOString().split('T')[0];
         }
 
-        function createDayTab(date, isToday) {
+        function createDayTab(date, index) {
             const formatted = formatDate(date);
             const key = getStorageKey(date);
+
             const dayDiv = document.createElement('div');
             dayDiv.className = 'day';
             dayDiv.dataset.date = date;
 
-            const content = `
+            dayDiv.innerHTML = `
                 <div class="card">
                     <h3>${formatted}</h3>
                     <input type="text" placeholder="Tâche" id="task_${key}" oninput="saveTempData('${key}')">
@@ -184,29 +171,10 @@
                 </div>
                 <ul id="list_${key}" ondragover="event.preventDefault()" ondrop="drop(event, '${key}')"></ul>
             `;
-            dayDiv.innerHTML = content;
-            slider.appendChild(dayDiv);
+
+            content.appendChild(dayDiv);
             restoreTempData(key);
         }
-
-        let startX = 0;
-        let isDragging = false;
-
-        slider.addEventListener('mousedown', e => {
-            startX = e.pageX;
-            isDragging = true;
-        });
-
-        slider.addEventListener('mouseup', e => {
-            if (!isDragging) return;
-            const diff = e.pageX - startX;
-            if (diff < -50 && currentIndex < slider.children.length - 1) currentIndex++;
-            else if (diff > 50 && currentIndex > 0) currentIndex--;
-            slider.style.transform = `translateX(-${currentIndex * 100}vw)`;
-            isDragging = false;
-        });
-
-        slider.addEventListener('mouseleave', () => isDragging = false);
 
         function saveTempData(key) {
             const data = {
@@ -228,8 +196,7 @@
         }
 
         function loadTasks() {
-            const days = document.querySelectorAll('.day');
-            days.forEach(day => {
+            document.querySelectorAll('.day').forEach(day => {
                 const date = new Date(day.dataset.date);
                 const key = getStorageKey(date);
                 const listEl = document.getElementById(`list_${key}`);
@@ -338,10 +305,12 @@
             }
         }
 
-        document.getElementById('scrollTodayBtn').addEventListener('click', () => {
-            currentIndex = 0;
-            slider.style.transform = `translateX(0)`;
-        });
+        function updateView(index) {
+            content.style.transform = `translateX(-${index * 100}vw)`;
+            const day = new Date();
+            day.setDate(day.getDate() + index);
+            header.innerText = formatDate(day);
+        }
 
         window.onload = () => {
             migrateUnfinishedTasks();
@@ -349,11 +318,31 @@
             for (let i = 0; i < 6; i++) {
                 const day = new Date();
                 day.setDate(today.getDate() + i);
-                createDayTab(day, i === 0);
+                createDayTab(day, i);
             }
-            header.innerText = formatDate(today);
+            updateView(0);
             loadTasks();
-        }
+        };
+
+        document.querySelector('.viewport').addEventListener('touchstart', (e) => {
+            isDragging = true;
+            startX = e.touches[0].clientX;
+        });
+
+        document.querySelector('.viewport').addEventListener('touchend', (e) => {
+            isDragging = false;
+        });
+
+        document.querySelector('.viewport').addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const diff = startX - e.touches[0].clientX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0 && currentIndex < 5) currentIndex++;
+                if (diff < 0 && currentIndex > 0) currentIndex--;
+                updateView(currentIndex);
+                isDragging = false;
+            }
+        });
     </script>
 </body>
 
